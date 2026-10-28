@@ -46,9 +46,239 @@
   color: #725c3e;
 }
 
+.furniture-stepper {
+  display: grid;
+  gap: 14px;
+  padding: 18px 24px;
+  border-bottom: 1px solid #eceeed;
+  background: #fcfbf7;
+}
+
+.furniture-stepper__top,
+.furniture-stepper__controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.furniture-stepper__top {
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.furniture-stepper__scenario {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #657369;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.furniture-stepper__scenario select {
+  min-height: 34px;
+  padding: 0 30px 0 10px;
+  border: 1px solid #dfe5dc;
+  border-radius: 8px;
+  background: #fffefa;
+  color: #405348;
+  font: inherit;
+  font-size: 11px;
+}
+
+.furniture-stepper__route {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #68786d;
+  font-size: 11px;
+}
+
+.furniture-stepper__live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #7a9c76;
+  box-shadow: 0 0 0 3px #e6efe2;
+}
+
+.furniture-stepper__controls {
+  gap: 8px;
+}
+
+.furniture-stepper__button {
+  min-height: 32px;
+  padding: 0 11px;
+  border: 1px solid #dfe5dc;
+  border-radius: 7px;
+  background: #fffefa;
+  color: #53655a;
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 650;
+  transition: background 120ms ease, border-color 120ms ease, opacity 120ms ease;
+}
+
+.furniture-stepper__button:hover:not(:disabled) {
+  border-color: #bacdbb;
+  background: #eef3eb;
+}
+
+.furniture-stepper__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.furniture-stepper__play {
+  min-width: 62px;
+  border-color: #536e58;
+  background: #536e58;
+  color: #fff;
+}
+
+.furniture-stepper__play:hover:not(:disabled) {
+  border-color: #405b46;
+  background: #405b46;
+}
+
+.furniture-stepper__range {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  padding: 0 7px;
+}
+
+.furniture-stepper__range input {
+  width: 100%;
+  height: 4px;
+  accent-color: #67866a;
+  cursor: pointer;
+}
+
+.furniture-stepper__count {
+  min-width: 48px;
+  color: #42584a;
+  font-size: 11px;
+  font-weight: 750;
+  text-align: right;
+}
+
+.furniture-stepper__count span {
+  color: #9aa39b;
+  font-weight: 500;
+}
+
+.furniture-stepper__current {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  min-height: 43px;
+  padding-top: 1px;
+}
+
+.furniture-stepper__current > span {
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: #edf2e8;
+  color: #6d8068;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+}
+
+.furniture-stepper__current strong {
+  color: #35483b;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.furniture-stepper__current p {
+  margin: 3px 0 0;
+  color: #7b867d;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.furniture-canvas .react-flow__node.bpmn-step-current {
+  z-index: 8 !important;
+}
+
+.furniture-canvas .bpmn-step-current .bpmn-activity,
+.furniture-canvas .bpmn-step-current .bpmn-event,
+.furniture-canvas .bpmn-step-current .bpmn-gateway-shape {
+  outline: 3px solid rgb(104 145 108 / 34%);
+  outline-offset: 4px;
+  filter: drop-shadow(0 3px 9px rgb(57 94 62 / 19%));
+  animation: furniture-step-pulse 1.8s ease-in-out infinite;
+}
+
+.furniture-canvas .bpmn-step-current .bpmn-activity,
+.furniture-canvas .bpmn-step-current .bpmn-event {
+  border-color: #64866a;
+}
+
+.furniture-canvas .bpmn-step-complete {
+  opacity: 0.8;
+}
+
+.furniture-canvas .bpmn-step-alternate {
+  opacity: 0.22;
+}
+
+.furniture-canvas .react-flow__edge.animated path {
+  stroke-dasharray: 6 4;
+  animation-duration: 0.7s;
+}
+
+@keyframes furniture-step-pulse {
+  0%,
+  100% {
+    outline-color: rgb(104 145 108 / 24%);
+  }
+  50% {
+    outline-color: rgb(104 145 108 / 52%);
+  }
+}
+
 @media (max-width: 800px) {
   .furniture-canvas {
     height: 62vh;
     min-height: 390px;
+  }
+
+  .furniture-stepper {
+    padding: 15px 16px;
+  }
+
+  .furniture-stepper__top {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .furniture-stepper__controls {
+    gap: 5px;
+  }
+
+  .furniture-stepper__button {
+    padding: 0 8px;
+  }
+
+  .furniture-stepper__play {
+    min-width: 52px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .furniture-canvas .bpmn-step-current .bpmn-activity,
+  .furniture-canvas .bpmn-step-current .bpmn-event,
+  .furniture-canvas .bpmn-step-current .bpmn-gateway-shape {
+    animation: none;
+  }
+
+  .furniture-stepper__button {
+    transition: none;
   }
 }

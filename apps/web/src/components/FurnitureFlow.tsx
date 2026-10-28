@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   addEdge,
   applyEdgeChanges,
@@ -134,9 +134,134 @@ const initialEdges: Edge[] = [
   sequence('client-delivery', 'arrange-delivery', 'sale-complete'),
 ];
 
+const routes: Record<'inStock' | 'supplier', { label: string; nodeIds: string[]; edgeIds: string[] }> = {
+  inStock: {
+    label: 'The item is in the showroom',
+    nodeIds: ['inquiry', 'review-request', 'check-stock', 'stock-decision', 'arrange-delivery', 'sale-complete'],
+    edgeIds: ['inquiry-review', 'review-stock', 'stock-decision', 'stock-available', 'client-delivery'],
+  },
+  supplier: {
+    label: 'The item needs to come from a supplier',
+    nodeIds: [
+      'inquiry',
+      'review-request',
+      'check-stock',
+      'stock-decision',
+      'request-from-supplier',
+      'supplier-order',
+      'prepare-order',
+      'dispatch-order',
+      'supplier-ready',
+      'supplier-update',
+      'arrange-delivery',
+      'sale-complete',
+    ],
+    edgeIds: [
+      'inquiry-review',
+      'review-stock',
+      'stock-decision',
+      'stock-needed',
+      'supplier-message',
+      'supplier-receives',
+      'supplier-prepares',
+      'supplier-completes',
+      'dispatch-confirmation',
+      'supplier-delivery-arranged',
+      'client-delivery',
+    ],
+  },
+} as const;
+
+const stepDescriptions: Record<string, string> = {
+  inquiry: 'A client asks Atelier Noir about a piece of luxury furniture.',
+  'review-request': 'A seller reviews the client’s request and identifies the furniture piece.',
+  'check-stock': 'The seller checks whether the requested piece is available in the showroom.',
+  'stock-decision': 'Choose one outcome: continue from showroom stock, or place a supplier order.',
+  'request-from-supplier': 'The seller sends a purchase order to the furniture maker.',
+  'supplier-order': 'The supplier receives the seller’s purchase order.',
+  'prepare-order': 'The supplier prepares the furniture for dispatch.',
+  'dispatch-order': 'The supplier ships the furniture to the seller.',
+  'supplier-ready': 'The supplier confirms the item has been dispatched.',
+  'supplier-update': 'The seller receives the supplier’s dispatch confirmation.',
+  'arrange-delivery': 'The seller arranges the final delivery with the client.',
+  'sale-complete': 'The furniture reaches the client and the order is complete.',
+};
+
 export default function FurnitureFlow() {
   const [nodes, setNodes] = useState(initialNodes);
   const [edges, setEdges] = useState(initialEdges);
+  const [scenario, setScenario] = useState<keyof typeof routes>('supplier');
+  const [step, setStep] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const route = routes[scenario];
+  const currentNodeId = route.nodeIds[step];
+  const visitedNodeIds = useMemo(() => new Set(route.nodeIds.slice(0, step + 1)), [route, step]);
+  const visitedEdgeIds = useMemo(() => new Set(route.edgeIds.slice(0, step)), [route, step]);
+  const displayedNodes = useMemo(
+    () =>
+      nodes.map((node) => {
+        const classNames = (node.className ?? '').split(/\s+/).filter(Boolean);
+
+        if (node.type === 'lane') {
+          return node;
+        }
+
+        if (node.id === currentNodeId) {
+          classNames.push('bpmn-step-current');
+        } else if (visitedNodeIds.has(node.id)) {
+          classNames.push('bpmn-step-complete');
+        } else if (!route.nodeIds.includes(node.id)) {
+          classNames.push('bpmn-step-alternate');
+        }
+
+        return { ...node, className: [...new Set(classNames)].join(' ') };
+      }),
+    [currentNodeId, nodes, route, visitedNodeIds],
+  );
+  const displayedEdges = useMemo(
+    () =>
+      edges.map((edge) => {
+        const isOnRoute = route.edgeIds.includes(edge.id);
+        const isVisited = visitedEdgeIds.has(edge.id);
+        const isNext = route.edgeIds[step] === edge.id;
+
+        return {
+          ...edge,
+          animated: isNext,
+          style: {
+            ...edge.style,
+            opacity: isOnRoute ? (isVisited || isNext ? 1 : 0.36) : 0.12,
+            strokeWidth: isVisited || isNext ? 2.8 : 1.8,
+          },
+        };
+      }),
+    [edges, route, step, visitedEdgeIds],
+  );
+
+  useEffect(() => {
+    if (!isPlaying) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setStep((currentStep) => Math.min(route.nodeIds.length - 1, currentStep + 1));
+    }, 1400);
+
+    return () => window.clearInterval(timer);
+  }, [isPlaying, route]);
+
+  useEffect(() => {
+    if (isPlaying && step >= route.nodeIds.length - 1) {
+      setIsPlaying(false);
+    }
+  }, [isPlaying, route.nodeIds.length, step]);
+
+  const selectScenario = (nextScenario: keyof typeof routes) => {
+    setIsPlaying(false);
+    setScenario(nextScenario);
+    setStep(0);
+  };
 
   const onNodesChange = useCallback((changes: NodeChange<Node<BpmnData>>[]) => {
     setNodes((currentNodes) => applyNodeChanges(changes, currentNodes));
@@ -177,10 +302,91 @@ export default function FurnitureFlow() {
         </div>
       </header>
 
+      <section className="furniture-stepper" aria-label="Process walkthrough controls">
+        <div className="furniture-stepper__top">
+          <label className="furniture-stepper__scenario">
+            <span>Stock decision</span>
+            <select
+              value={scenario}
+              onChange={(event) => selectScenario(event.currentTarget.value as keyof typeof routes)}
+            >
+              <option value="supplier">Order from supplier</option>
+              <option value="inStock">Already in showroom</option>
+            </select>
+          </label>
+          <p className="furniture-stepper__route">
+            <span className="furniture-stepper__live-dot" />
+            {route.label}
+          </p>
+        </div>
+
+        <div className="furniture-stepper__controls">
+          <button
+            className="furniture-stepper__button furniture-stepper__play"
+            type="button"
+            onClick={() => {
+              if (step === route.nodeIds.length - 1) {
+                setStep(0);
+              }
+              setIsPlaying((playing) => !playing);
+            }}
+            aria-label={isPlaying ? 'Pause process' : step === route.nodeIds.length - 1 ? 'Replay process' : 'Play process'}
+          >
+            {isPlaying ? 'Pause' : step === route.nodeIds.length - 1 ? 'Replay' : 'Play'}
+          </button>
+          <button
+            className="furniture-stepper__button"
+            type="button"
+            onClick={() => {
+              setIsPlaying(false);
+              setStep((currentStep) => Math.max(0, currentStep - 1));
+            }}
+            disabled={step === 0}
+          >
+            Previous
+          </button>
+          <label className="furniture-stepper__range">
+            <span className="sr-only">Process step</span>
+            <input
+              type="range"
+              min={0}
+              max={route.nodeIds.length - 1}
+              value={step}
+              onChange={(event) => {
+                setIsPlaying(false);
+                setStep(Number(event.currentTarget.value));
+              }}
+            />
+          </label>
+          <button
+            className="furniture-stepper__button"
+            type="button"
+            onClick={() => {
+              setIsPlaying(false);
+              setStep((currentStep) => Math.min(route.nodeIds.length - 1, currentStep + 1));
+            }}
+            disabled={step === route.nodeIds.length - 1}
+          >
+            Next
+          </button>
+          <span className="furniture-stepper__count">
+            {step + 1} <span>/ {route.nodeIds.length}</span>
+          </span>
+        </div>
+
+        <div className="furniture-stepper__current" aria-live="polite">
+          <span>NOW</span>
+          <div>
+            <strong>{nodes.find((node) => node.id === currentNodeId)?.data.label}</strong>
+            <p>{stepDescriptions[currentNodeId]}</p>
+          </div>
+        </div>
+      </section>
+
       <div className="furniture-canvas">
         <ReactFlow
-          nodes={nodes}
-          edges={edges}
+          nodes={displayedNodes}
+          edges={displayedEdges}
           nodeTypes={nodeTypes}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}

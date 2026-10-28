@@ -77,6 +77,96 @@ body {
   color: #355440;
 }
 
+.bpmn-examples-menu {
+  position: relative;
+}
+
+.bpmn-examples-menu > summary {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #66746b;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  list-style: none;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.bpmn-examples-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.bpmn-examples-menu > summary::marker {
+  content: "";
+}
+
+.bpmn-examples-menu > summary svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+  transition: transform 120ms ease;
+}
+
+.bpmn-examples-menu[open] > summary svg {
+  transform: rotate(180deg);
+}
+
+.bpmn-examples-menu > summary:hover,
+.bpmn-examples-menu > summary[aria-current="page"] {
+  background: #e8eee5;
+  color: #355440;
+}
+
+.bpmn-examples-menu__panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 9px);
+  right: 0;
+  width: 250px;
+  padding: 8px;
+  border: 1px solid #e3e8df;
+  border-radius: 12px;
+  background: #fffdf8;
+  box-shadow: 0 14px 36px rgb(34 53 73 / 13%);
+}
+
+.bpmn-examples-menu__panel > p {
+  margin: 7px 9px 5px;
+  color: #899389;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+
+.bpmn-site-nav .bpmn-examples-menu__panel a {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px;
+  border-radius: 7px;
+  color: #405348;
+  font-size: 12px;
+}
+
+.bpmn-site-nav .bpmn-examples-menu__panel a:hover,
+.bpmn-site-nav .bpmn-examples-menu__panel a[aria-current="page"] {
+  background: #eef2ea;
+}
+
+.bpmn-examples-menu__panel small {
+  color: #849087;
+  font-size: 10px;
+  font-weight: 450;
+}
+
 @media (max-width: 800px) {
   .bpmn-site-nav {
     width: min(100% - 24px, 1600px);
@@ -91,7 +181,13 @@ body {
     gap: 0;
   }
 
-  .bpmn-site-nav__links a {
+  .bpmn-site-nav__links > a,
+  .bpmn-examples-menu > summary {
     padding: 8px;
+  }
+
+  .bpmn-examples-menu__panel {
+    right: -40px;
+    width: min(250px, calc(100vw - 32px));
   }
 }

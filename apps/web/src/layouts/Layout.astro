@@ -27,8 +27,25 @@ const currentPath = Astro.url.pathname;
 					<span>goodsole<span class="bpmn-site-nav__brand-suffix"> / process lab</span></span>
 				</a>
 				<div class="bpmn-site-nav__links">
-					<a href="/" aria-current={currentPath === '/' ? 'page' : undefined}>Shoe order</a>
-					<a href="/furniture" aria-current={currentPath.startsWith('/furniture') ? 'page' : undefined}>Furniture</a>
+					<details class="bpmn-examples-menu">
+						<summary aria-current={currentPath === '/' || currentPath.startsWith('/furniture') ? 'page' : undefined}>
+							Examples
+							<svg viewBox="0 0 16 16" aria-hidden="true">
+								<path d="m4 6 4 4 4-4" />
+							</svg>
+						</summary>
+						<div class="bpmn-examples-menu__panel">
+							<p>PROCESS EXAMPLES</p>
+							<a href="/" aria-current={currentPath === '/' ? 'page' : undefined}>
+								<span>Shoe order</span>
+								<small>Online shop · Goodsole</small>
+							</a>
+							<a href="/furniture" aria-current={currentPath.startsWith('/furniture') ? 'page' : undefined}>
+								<span>Furniture order</span>
+								<small>Seller &amp; supplier · Atelier Noir</small>
+							</a>
+						</div>
+					</details>
 					<a href="/learn" aria-current={currentPath.startsWith('/learn') ? 'page' : undefined}>Learn BPMN</a>
 				</div>
 			</nav>
