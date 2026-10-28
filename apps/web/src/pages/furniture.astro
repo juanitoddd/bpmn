@@ -1,0 +1,24 @@
+---
+import FurnitureFlow from '../components/FurnitureFlow';
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+	title="Atelier Noir · Furniture order process"
+	description="A simple BPMN example showing how luxury furniture seller Atelier Noir works with its suppliers."
+>
+	<main class="bpmn-page">
+		<header class="bpmn-page__intro furniture-page__intro">
+			<p class="bpmn-page__kicker">ATELIER NOIR · A FICTIONAL FURNITURE HOUSE</p>
+			<h1>From showroom to home.</h1>
+			<p>
+				A simple look at how a luxury furniture seller checks availability,
+				works with a supplier when needed, and arranges delivery for a client.
+			</p>
+		</header>
+		<FurnitureFlow client:only="react" />
+		<p class="bpmn-page__note">
+			A compact BPMN collaboration example with a seller pool and a supplier pool.
+		</p>
+	</main>
+</Layout>

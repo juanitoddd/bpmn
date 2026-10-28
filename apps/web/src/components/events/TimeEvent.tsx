@@ -1,0 +1,1 @@
+export { TimeEvent as default } from '../bpmn/nodes';

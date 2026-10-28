@@ -1,0 +1,1 @@
+export { ExclusiveGateway as default } from '../bpmn/nodes';

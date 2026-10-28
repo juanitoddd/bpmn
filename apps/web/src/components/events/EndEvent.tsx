@@ -1,0 +1,1 @@
+export { EndEvent as default } from '../bpmn/nodes';

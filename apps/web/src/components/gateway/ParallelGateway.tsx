@@ -1,0 +1,1 @@
+export { ParallelGateway as default } from '../bpmn/nodes';

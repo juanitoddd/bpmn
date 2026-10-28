@@ -1,0 +1,1 @@
+export { DataArtifact as default } from '../bpmn/nodes';

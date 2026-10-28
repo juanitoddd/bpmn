@@ -1,0 +1,1 @@
+export { InclusiveGateway as default } from '../bpmn/nodes';

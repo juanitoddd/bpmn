@@ -1,0 +1,9 @@
+{
+  "extends": "@bpflow/tsconfig/react.json",
+  "display": "@bpflow/react",
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "dist"],
+  "compilerOptions": {
+    "outDir": "dist"
+  }
+}

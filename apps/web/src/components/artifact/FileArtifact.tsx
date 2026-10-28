@@ -1,0 +1,1 @@
+export { FileArtifact as default } from '../bpmn/nodes';

@@ -1,0 +1,41 @@
+---
+import LearnFlow from '../components/LearnFlow';
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+	title="Learn BPMN · Goodsole process lab"
+	description="Explore the BPMN activities, events, gateways, data, and participants used in the Goodsole process diagrams."
+>
+	<main class="learn-page">
+		<header class="learn-page__intro">
+			<p class="bpmn-page__kicker">A FIELD GUIDE TO PROCESS DIAGRAMS</p>
+			<h1>Learn the language of BPMN.</h1>
+			<p>
+				Meet the building blocks behind the Goodsole shoe-order process. Each
+				canvas uses the same interactive components as the example diagram:
+				drag a node, zoom, and fit the view.
+			</p>
+		</header>
+
+		<nav class="learn-toc" aria-label="BPMN node categories">
+			<a href="#activities">Activities</a>
+			<a href="#events">Events</a>
+			<a href="#gateways">Gateways</a>
+			<a href="#artifacts">Data &amp; annotations</a>
+			<a href="#participants">Pools &amp; lanes</a>
+		</nav>
+
+		<LearnFlow client:only="react" />
+
+		<aside class="learn-note">
+			<strong>A note on scope</strong>
+			<p>
+				This gallery introduces the BPMN visual primitives implemented in this
+				project. BPMN 2.0 includes additional event definitions, task variants,
+				and diagram constructs; this gallery is not a complete specification
+				guide or an executable process engine.
+			</p>
+		</aside>
+	</main>
+</Layout>

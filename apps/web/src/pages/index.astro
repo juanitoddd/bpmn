@@ -1,0 +1,24 @@
+---
+import Flow from '../components/Flow';
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+	title="Goodsole · Shoe order process"
+	description="Explore Goodsole's shoe-order workflow in an interactive BPMN diagram."
+>
+	<main class="bpmn-page">
+		<header class="bpmn-page__intro">
+			<p class="bpmn-page__kicker">GOODSOLE · A FICTIONAL SHOE SHOP</p>
+			<h1>Every order has a story.</h1>
+			<p>
+				A simple, interactive BPMN example showing how an online shoe order
+				moves from checkout through fulfillment and delivery.
+			</p>
+		</header>
+		<Flow client:only="react" />
+		<p class="bpmn-page__note">
+			This is a visual process example, not an executable BPMN engine.
+		</p>
+	</main>
+</Layout>

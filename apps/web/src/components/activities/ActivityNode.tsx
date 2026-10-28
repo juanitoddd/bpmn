@@ -1,0 +1,1 @@
+export { ActivityNode as default } from '../bpmn/nodes';

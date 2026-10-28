@@ -1,0 +1,1 @@
+export { StartEvent as default } from '../bpmn/nodes';

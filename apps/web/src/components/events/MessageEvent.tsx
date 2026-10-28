@@ -1,0 +1,1 @@
+export { MessageEvent as default } from '../bpmn/nodes';

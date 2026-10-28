@@ -1,0 +1,54 @@
+.furniture-canvas {
+  width: 100%;
+  height: min(64vh, 550px);
+  min-height: 430px;
+  background: #fffdf8;
+}
+
+.furniture-canvas .react-flow {
+  background: #fffdf8;
+}
+
+.furniture-canvas .react-flow__controls {
+  overflow: hidden;
+  border: 1px solid #e6e9e9;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgb(34 53 73 / 8%);
+}
+
+.furniture-canvas .react-flow__controls-button {
+  width: 30px;
+  height: 30px;
+}
+
+.furniture-pool-node {
+  z-index: -1 !important;
+}
+
+.furniture-pool-node .bpmn-lane {
+  border-color: #e4ddd0;
+  background: rgb(250 248 242 / 66%);
+}
+
+.furniture-pool-node .bpmn-lane__label {
+  color: #806d52;
+}
+
+.furniture-page__intro h1 {
+  color: #382f27;
+}
+
+.furniture-workspace .bpmn-workspace__header h2 {
+  color: #382f27;
+}
+
+.furniture-workspace .bpmn-workspace__description strong {
+  color: #725c3e;
+}
+
+@media (max-width: 800px) {
+  .furniture-canvas {
+    height: 62vh;
+    min-height: 390px;
+  }
+}

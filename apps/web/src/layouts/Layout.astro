@@ -1,0 +1,38 @@
+---
+import '../styles/global.css';
+
+interface Props {
+	title: string;
+	description: string;
+}
+
+const { title, description } = Astro.props;
+const currentPath = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="generator" content={Astro.generator} />
+		<meta name="description" content={description} />
+		<title>{title}</title>
+	</head>
+	<body class="min-h-screen antialiased">
+		<div class="bpmn-site-shell">
+			<nav class="bpmn-site-nav" aria-label="Main navigation">
+				<a class="bpmn-site-nav__brand" href="/" aria-label="Goodsole BPMN home">
+					<span class="bpmn-site-nav__mark" aria-hidden="true">g</span>
+					<span>goodsole<span class="bpmn-site-nav__brand-suffix"> / process lab</span></span>
+				</a>
+				<div class="bpmn-site-nav__links">
+					<a href="/" aria-current={currentPath === '/' ? 'page' : undefined}>Shoe order</a>
+					<a href="/furniture" aria-current={currentPath.startsWith('/furniture') ? 'page' : undefined}>Furniture</a>
+					<a href="/learn" aria-current={currentPath.startsWith('/learn') ? 'page' : undefined}>Learn BPMN</a>
+				</div>
+			</nav>
+			<slot />
+		</div>
+	</body>
+</html>
