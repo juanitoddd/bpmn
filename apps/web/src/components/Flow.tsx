@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   addEdge,
   applyEdgeChanges,
@@ -35,6 +35,7 @@ import {
   type BpmnData,
 } from './bpmn/nodes';
 import './bpmn/bpmn.css';
+import './bpmn/goodsole.css';
 
 const nodeTypes = {
   activity: ActivityNode,
@@ -138,9 +139,157 @@ const initialEdges: Edge[] = [
   sequenceEdge('delivery-complete', 'delivery-window', 'order-complete', 'left', 'right'),
 ];
 
+type ShoeScenario = 'paymentDeclined' | 'outOfStock' | 'fulfilled';
+
+interface ShoeStep {
+  label: string;
+  description: string;
+  nodeIds: string[];
+  outgoingEdgeIds?: string[];
+  associatedEdgeIds?: string[];
+}
+
+const routes: Record<ShoeScenario, ShoeStep[]> = {
+  paymentDeclined: [
+    { label: 'Order received', description: 'Goodsole receives the customer’s shoe order.', nodeIds: ['order-start'], outgoingEdgeIds: ['start-browse'] },
+    { label: 'Browse shoes', description: 'The customer explores the available shoes.', nodeIds: ['browse'], outgoingEdgeIds: ['browse-cart'] },
+    { label: 'Build shopping cart', description: 'The customer adds the chosen shoe and size to their cart.', nodeIds: ['cart'], outgoingEdgeIds: ['cart-payment'] },
+    { label: 'Authorize payment', description: 'The payment service checks the customer’s payment method.', nodeIds: ['payment'], outgoingEdgeIds: ['payment-decision'] },
+    { label: 'Payment approved?', description: 'The payment is declined, so the order cannot continue.', nodeIds: ['payment-gateway'], outgoingEdgeIds: ['payment-declined'] },
+    { label: 'Order declined', description: 'Goodsole informs the customer that the order was declined.', nodeIds: ['payment-failed'] },
+  ],
+  outOfStock: [
+    { label: 'Order received', description: 'Goodsole receives the customer’s shoe order.', nodeIds: ['order-start'], outgoingEdgeIds: ['start-browse'] },
+    { label: 'Browse shoes', description: 'The customer explores the available shoes.', nodeIds: ['browse'], outgoingEdgeIds: ['browse-cart'] },
+    { label: 'Build shopping cart', description: 'The customer adds the chosen shoe and size to their cart.', nodeIds: ['cart'], outgoingEdgeIds: ['cart-payment'] },
+    { label: 'Authorize payment', description: 'The payment service checks the customer’s payment method.', nodeIds: ['payment'], outgoingEdgeIds: ['payment-decision'] },
+    { label: 'Payment approved?', description: 'The payment is approved, so Goodsole can check inventory.', nodeIds: ['payment-gateway'], outgoingEdgeIds: ['payment-approved'] },
+    { label: 'Reserve shoe size', description: 'The stock system checks the requested shoe size.', nodeIds: ['reserve-stock'], outgoingEdgeIds: ['reserve-check'] },
+    { label: 'In stock?', description: 'The requested size is unavailable, so Goodsole stops fulfillment.', nodeIds: ['stock-gateway'], outgoingEdgeIds: ['stock-missing'] },
+    { label: 'Refund & notify', description: 'Goodsole refunds the order and notifies the customer that the size is unavailable.', nodeIds: ['stock-unavailable'] },
+  ],
+  fulfilled: [
+    { label: 'Order received', description: 'Goodsole receives the customer’s shoe order.', nodeIds: ['order-start'], outgoingEdgeIds: ['start-browse'] },
+    { label: 'Browse shoes', description: 'The customer explores the available shoes.', nodeIds: ['browse'], outgoingEdgeIds: ['browse-cart'] },
+    { label: 'Build shopping cart', description: 'The customer adds the chosen shoe and size to their cart.', nodeIds: ['cart'], outgoingEdgeIds: ['cart-payment'] },
+    { label: 'Authorize payment', description: 'The payment service checks the customer’s payment method.', nodeIds: ['payment'], outgoingEdgeIds: ['payment-decision'] },
+    { label: 'Payment approved?', description: 'Payment is approved. The process continues to check stock.', nodeIds: ['payment-gateway'], outgoingEdgeIds: ['payment-approved'] },
+    { label: 'Reserve shoe size', description: 'The stock system confirms that the requested size is available.', nodeIds: ['reserve-stock'], outgoingEdgeIds: ['reserve-check'] },
+    { label: 'In stock?', description: 'The shoe is available, so Goodsole starts fulfillment.', nodeIds: ['stock-gateway'], outgoingEdgeIds: ['stock-available'] },
+    { label: 'Fulfill order', description: 'The parallel gateway starts picking and packing and invoice creation at the same time.', nodeIds: ['fulfillment-split'], outgoingEdgeIds: ['split-pack', 'split-invoice'] },
+    {
+      label: 'Pack shoes and create invoice',
+      description: 'The warehouse packs the shoes while the order system creates an invoice; these activities happen in parallel.',
+      nodeIds: ['pack-order', 'create-invoice', 'invoice-document'],
+      outgoingEdgeIds: ['pack-join', 'invoice-join'],
+      associatedEdgeIds: ['invoice-association'],
+    },
+    { label: 'Ready to ship', description: 'Both parallel activities are complete, so the order can be dispatched.', nodeIds: ['fulfillment-join'], outgoingEdgeIds: ['join-dispatch'] },
+    { label: 'Dispatch parcel', description: 'The carrier takes the packed shoe order for delivery.', nodeIds: ['dispatch'], outgoingEdgeIds: ['dispatch-tracking'] },
+    { label: 'Tracking sent', description: 'Goodsole sends the customer a parcel tracking update.', nodeIds: ['tracking-sent'], outgoingEdgeIds: ['tracking-delivery'] },
+    { label: 'Delivery window', description: 'The parcel arrives during the expected delivery window.', nodeIds: ['delivery-window'], outgoingEdgeIds: ['delivery-complete'] },
+    { label: 'Shoes delivered', description: 'The customer receives the shoes and the order is complete.', nodeIds: ['order-complete'] },
+  ],
+};
+
+function isShoeScenario(value: string): value is ShoeScenario {
+  return value === 'paymentDeclined' || value === 'outOfStock' || value === 'fulfilled';
+}
+
 export default function Flow() {
   const [nodes, setNodes] = useState(initialNodes);
   const [edges, setEdges] = useState(initialEdges);
+  const [scenario, setScenario] = useState<ShoeScenario>('fulfilled');
+  const [step, setStep] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const route = routes[scenario];
+  const currentStep = route[step];
+  const currentNodeIds = useMemo(() => new Set(currentStep.nodeIds), [currentStep]);
+  const visitedNodeIds = useMemo(
+    () => new Set(route.slice(0, step).flatMap((routeStep) => routeStep.nodeIds)),
+    [route, step],
+  );
+  const visitedEdgeIds = useMemo(
+    () => new Set(route.slice(0, step).flatMap((routeStep) => routeStep.outgoingEdgeIds ?? [])),
+    [route, step],
+  );
+  const currentEdgeIds = useMemo(
+    () => new Set([...currentStep.outgoingEdgeIds ?? [], ...currentStep.associatedEdgeIds ?? []]),
+    [currentStep],
+  );
+  const routeNodeIds = useMemo(
+    () => new Set(route.flatMap((routeStep) => routeStep.nodeIds)),
+    [route],
+  );
+  const displayedNodes = useMemo(
+    () =>
+      nodes.map((node) => {
+        const classNames = (node.className ?? '').split(/\s+/).filter(Boolean);
+
+        if (node.type !== 'lane') {
+          if (currentNodeIds.has(node.id)) {
+            classNames.push('bpmn-step-current');
+          } else if (visitedNodeIds.has(node.id)) {
+            classNames.push('bpmn-step-complete');
+          } else if (!routeNodeIds.has(node.id)) {
+            classNames.push('bpmn-step-alternate');
+          }
+        }
+
+        return { ...node, className: [...new Set(classNames)].join(' ') };
+      }),
+    [currentNodeIds, nodes, routeNodeIds, visitedNodeIds],
+  );
+  const displayedEdges = useMemo(
+    () =>
+      edges.map((edge) => {
+        const isCurrent = currentEdgeIds.has(edge.id);
+        const isVisited = visitedEdgeIds.has(edge.id);
+        const isOnRoute = route.some((routeStep) =>
+          [...routeStep.outgoingEdgeIds ?? [], ...routeStep.associatedEdgeIds ?? []].includes(edge.id),
+        );
+
+        return {
+          ...edge,
+          animated: isCurrent && !currentStep.associatedEdgeIds?.includes(edge.id),
+          style: {
+            ...edge.style,
+            opacity: isCurrent || isVisited ? 1 : isOnRoute ? 0.36 : 0.12,
+            strokeWidth: isCurrent || isVisited ? 2.8 : 1.8,
+          },
+        };
+      }),
+    [currentEdgeIds, currentStep.associatedEdgeIds, edges, route, visitedEdgeIds],
+  );
+
+  useEffect(() => {
+    if (!isPlaying) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setStep((currentStepIndex) => Math.min(route.length - 1, currentStepIndex + 1));
+    }, 1400);
+
+    return () => window.clearInterval(timer);
+  }, [isPlaying, route]);
+
+  useEffect(() => {
+    if (isPlaying && step >= route.length - 1) {
+      setIsPlaying(false);
+    }
+  }, [isPlaying, route.length, step]);
+
+  const selectScenario = (value: string) => {
+    if (!isShoeScenario(value)) {
+      return;
+    }
+
+    setIsPlaying(false);
+    setScenario(value);
+    setStep(0);
+  };
 
   const onNodesChange = useCallback((changes: NodeChange<Node<BpmnData>>[]) => {
     setNodes((currentNodes) => applyNodeChanges(changes, currentNodes));
@@ -184,10 +333,93 @@ export default function Flow() {
         </div>
       </header>
 
+      <section className="goodsole-stepper" aria-label="Process walkthrough controls">
+        <div className="goodsole-stepper__top">
+          <label className="goodsole-stepper__scenario">
+            <span>Order outcome</span>
+            <select value={scenario} onChange={(event) => selectScenario(event.currentTarget.value)}>
+              <option value="fulfilled">Payment and stock approved</option>
+              <option value="outOfStock">Shoe size unavailable</option>
+              <option value="paymentDeclined">Payment declined</option>
+            </select>
+          </label>
+          <p className="goodsole-stepper__route">
+            <span className="goodsole-stepper__live-dot" />
+            {scenario === 'fulfilled'
+              ? 'Successful order · parallel packing and invoicing'
+              : scenario === 'outOfStock'
+                ? 'Approved payment · unavailable stock'
+                : 'Payment declined · order stopped'}
+          </p>
+        </div>
+
+        <div className="goodsole-stepper__controls">
+          <button
+            className="goodsole-stepper__button goodsole-stepper__play"
+            type="button"
+            onClick={() => {
+              if (step === route.length - 1) {
+                setStep(0);
+              }
+              setIsPlaying((playing) => !playing);
+            }}
+            aria-label={isPlaying ? 'Pause process' : step === route.length - 1 ? 'Replay process' : 'Play process'}
+          >
+            {isPlaying ? 'Pause' : step === route.length - 1 ? 'Replay' : 'Play'}
+          </button>
+          <button
+            className="goodsole-stepper__button"
+            type="button"
+            onClick={() => {
+              setIsPlaying(false);
+              setStep((currentStepIndex) => Math.max(0, currentStepIndex - 1));
+            }}
+            disabled={step === 0}
+          >
+            Previous
+          </button>
+          <label className="goodsole-stepper__range">
+            <span className="sr-only">Process step</span>
+            <input
+              type="range"
+              min={0}
+              max={route.length - 1}
+              value={step}
+              onChange={(event) => {
+                setIsPlaying(false);
+                setStep(Number(event.currentTarget.value));
+              }}
+            />
+          </label>
+          <button
+            className="goodsole-stepper__button"
+            type="button"
+            onClick={() => {
+              setIsPlaying(false);
+              setStep((currentStepIndex) => Math.min(route.length - 1, currentStepIndex + 1));
+            }}
+            disabled={step === route.length - 1}
+          >
+            Next
+          </button>
+          <span className="goodsole-stepper__count">
+            {step + 1} <span>/ {route.length}</span>
+          </span>
+        </div>
+
+        <div className="goodsole-stepper__current" aria-live="polite">
+          <span>NOW</span>
+          <div>
+            <strong>{currentStep.label}</strong>
+            <p>{currentStep.description}</p>
+          </div>
+        </div>
+      </section>
+
       <div className="bpmn-canvas">
         <ReactFlow
-          nodes={nodes}
-          edges={edges}
+          nodes={displayedNodes}
+          edges={displayedEdges}
           nodeTypes={nodeTypes}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
